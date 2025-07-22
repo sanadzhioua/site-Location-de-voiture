@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location de Voitures Antiques de Prestige</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #1a202c; /* Slate 900 */
+            --color-secondary: #d4af37; /* Gold */
+            --color-background: #fdfdfd;
+            --color-text: #2d3748; /* Slate 800 */
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .hero-section {
+            background-size: cover;
+            background-position: center;
+            height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.3));
+            z-index: 1;
+        }
+
+        .hero-content {
+            z-index: 2;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: emerge 1.5s 0.5s forwards;
+        }
+
+        @keyframes emerge {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .car-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
+        }
+
+        .car-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+
+        .btn-golden {
+            background-color: var(--color-secondary);
+            color: white;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .btn-golden:hover {
+            background-color: #c5a230;
+            transform: scale(1.05);
+        }
+
+        /* Styles pour le calendrier */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-day {
+            padding: 8px;
+            text-align: center;
+            border-radius: 9999px; /* full circle */
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s, color 0.2s;
+        }
+        .calendar-day.current-month {
+             color: var(--color-text);
+        }
+        .calendar-day.current-month:hover:not(.reserved):not(.selected) {
+            background-color: #f0e6d2;
+        }
+        .calendar-day.reserved {
+            background-color: #f1f1f1;
+            color: #b8b8b8;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        .calendar-day.selected {
+            background-color: var(--color-secondary);
+            color: white;
+            transform: scale(1.1);
+        }
+        .calendar-day.today {
+            font-weight: bold;
+            border: 2px solid var(--color-secondary);
+        }
+
+        /* Styles pour les modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #f1f1f1;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #999;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .close-button:hover {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-white/80 backdrop-blur-md shadow-sm p-4 flex justify-between items-center z-50 sticky top-0">
+        <h1 class="text-3xl font-bold text-gray-800">Voitures de Rêve</h1>
+        <nav>
+            <ul class="flex space-x-8">
+                <li><a href="#" id="home-link" class="text-gray-600 hover:text-[var(--color-secondary)] font-medium transition-colors">Accueil</a></li>
+                <li><a href="#" id="about-link" class="text-gray-600 hover:text-[var(--color-secondary)] font-medium transition-colors">À propos</a></li>
+                <li><a href="#contact" class="text-gray-600 hover:text-[var(--color-secondary)] font-medium transition-colors">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="app-container" class="flex-grow">
+        <!-- Le contenu sera injecté ici par JavaScript -->
+    </main>
+
+    <footer id="contact" class="bg-[var(--color-primary)] text-white pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <!-- Contact Info -->
+                <div class="space-y-4">
+                    <h3 class="text-2xl font-bold text-[var(--color-secondary)]">Contactez-nous</h3>
+                    <p class="text-gray-400">
+                        <i class="fas fa-map-marker-alt fa-fw mr-2 text-[var(--color-secondary)]"></i>
+                        Avenue Habib Bourguiba, Monastir, Tunisie
+                    </p>
+                    <p class="text-gray-400">
+                        <i class="fas fa-phone fa-fw mr-2 text-[var(--color-secondary)]"></i>
+                        +216 12 345 678
+                    </p>
+                    <p class="text-gray-400">
+                        <i class="fas fa-envelope fa-fw mr-2 text-[var(--color-secondary)]"></i>
+                        contact@voituresdereve.tn
+                    </p>
+                    <div class="flex space-x-4 pt-4">
+                        <a href="#" class="text-gray-400 hover:text-[var(--color-secondary)] transition-colors"><i class="fab fa-facebook-f fa-lg"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-[var(--color-secondary)] transition-colors"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-[var(--color-secondary)] transition-colors"><i class="fab fa-twitter fa-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Google Maps -->
+                <div class="md:col-span-2">
+                     <h3 class="text-2xl font-bold text-[var(--color-secondary)] mb-4">Notre Emplacement</h3>
+                    <div class="rounded-lg overflow-hidden border-2 border-[var(--color-secondary)]/50">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d25946.39878203036!2d10.81191319229611!3d35.77209353912624!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x13021a48dfa27969%3A0x23642398285e656e!2sMonastir!5e0!3m2!1sfr!2stn!4v1718821213735!5m2!1sfr!2stn" width="100%" height="250" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-500">
+                <p>&copy; 2025 Voitures de Rêve. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal pour les messages et le calendrier -->
+    <div id="message-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content text-center">
+            <button class="close-button" onclick="closeMessageModal()">&times;</button>
+            <h2 id="modal-message-title" class="text-3xl font-bold mb-4 text-gray-800"></h2>
+            <p id="modal-message-text" class="text-gray-600 mb-6"></p>
+            <div id="modal-calendar-container" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors"><i class="fas fa-chevron-left"></i></button>
+                    <span id="current-month-year" class="text-lg font-semibold"></span>
+                    <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="grid grid-cols-7 text-sm font-medium text-gray-400 mb-2">
+                    <span>Dim</span><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span>
+                </div>
+                <div id="calendar-days-grid" class="calendar-grid"></div>
+                <div class="flex justify-center mt-6">
+                    <button id="reserve-car-btn" class="btn-golden px-8 py-3 rounded-full shadow-lg hidden">
+                        Confirmer la Réservation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Variables globales pour l'état de l'application
+        let currentMonth, currentYear;
+        let selectedDates = [];
+        let cars = []; // Les voitures seront chargées depuis une liste prédéfinie
+        let reservations = []; // Pour les réservations fictives
+        let currentCar = null; // Voiture actuellement sélectionnée pour la page de détail
+        let currentCategoryFilter = 'Toutes'; // Filtre de catégorie actuel
+
+        // Récupérer les éléments du DOM
+        const appContainer = document.getElementById('app-container');
+        const messageModalOverlay = document.getElementById('message-modal-overlay');
+        const modalMessageTitle = document.getElementById('modal-message-title');
+        const modalMessageText = document.getElementById('modal-message-text');
+        const modalCalendarContainer = document.getElementById('modal-calendar-container');
+        const currentMonthYearSpan = document.getElementById('current-month-year');
+        const calendarDaysGrid = document.getElementById('calendar-days-grid');
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
+        const reserveCarBtn = document.getElementById('reserve-car-btn');
+        const homeLink = document.getElementById('home-link');
+        const aboutLink = document.getElementById('about-link');
+
+        // Fonction pour formater le prix en TND
+        const formatPriceInTND = (priceInEuro) => {
+            const tndRate = 3.3; // Taux de conversion approximatif (peut être ajusté)
+            const priceInTND = priceInEuro * tndRate;
+            return `${priceInTND.toFixed(0)} TND`; // Format sans décimales pour les dinars
+        };
+
+        // Liste des voitures d'exemple (simulant les données d'une base de données)
+        const loadExampleCars = () => {
+            return [
+                { id: 'car1', name: "Citroën 2cv", location: "Monastir (Tunisie)", pricePerDay: 144, seats: 4, bodyType: "Cabriolet", year: 1970, imageUrl: "https://classicautoloc.com/articles_photos/citroen-2cv-6-1989-blanc_1.jpg", description: "La Citroën 2CV, icône française, est parfaite pour une touche de fantaisie et de charme rétro lors de votre mariage ou cérémonie. Sa simplicité élégante et son allure décontractée en font un choix unique et mémorable.", category: "Collection" },
+                { id: 'car2', name: "MG B", location: "Sousse (Tunisie)", pricePerDay: 270, seats: 2, bodyType: "Cabriolet", year: 1974, imageUrl: "https://img.leboncoin.fr/api/v1/lbcpb1/images/48/0b/40/480b40c306f93bc47fbd0fdf99fa51a59483e57f.jpg?rule=ad-large", description: "La MG B, un roadster britannique classique, offre une expérience de conduite sportive et élégante. Idéale pour les mariages intimes ou les escapades romantiques, elle ajoutera une touche de sophistication anglaise à votre événement.", category: "Sportive" },
+                { id: 'car3', name: "Ford Mustang", location: "Hammamet (Tunisie)", pricePerDay: 400, seats: 4, bodyType: "Coupé", year: 1965, imageUrl: "https://cdn.botb.com/media/1v5onkhh/1960s-mustang-1.jpg", description: "La Ford Mustang de 1965 est le summum de la voiture de sport américaine classique. Avec son design musclé et son allure emblématique, elle garantira une entrée spectaculaire et des photos inoubliables pour votre cérémonie.", category: "Sportive" },
+                { id: 'car4', name: "Mercedes-Benz 220SE", location: "Tunis (Tunisie)", pricePerDay: 350, seats: 4, bodyType: "Berline", year: 1963, imageUrl: "https://hips.hearstapps.com/hmg-prod/images/1964-mercedes-benz-220se-coupe-bat-104-66e34066549cb.jpg", description: "La Mercedes-Benz 220SE offre une élégance intemporelle et un confort luxueux. Cette berline allemande est parfaite pour un mariage classique et sophistiqué, offrant un voyage fluide et stylé.", category: "Luxe" },
+                { id: 'car5', name: "Volkswagen Coccinelle", location: "Mahdia (Tunisie)", pricePerDay: 120, seats: 4, bodyType: "Berline", year: 1972, imageUrl: "https://cdn0.mariages.net/vendor/8287/3_2/960/jpeg/963bb494-7aef-4ceb-9106-6436882c83b5_3_358287-172744205143096.jpeg", description: "La Volkswagen Coccinelle est une voiture charmante et emblématique qui apportera une touche de joie et de nostalgie à votre événement. Son style unique et son caractère en font un choix adorable pour les cérémonies décontractées.", category: "Collection" },
+                { id: 'car6', name: "Rolls-Royce Silver Cloud", location: "Djerba (Tunisie)", pricePerDay: 600, seats: 4, bodyType: "Berline", year: 1959, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxHeWlg18Ryzm0OP1AtjUzTovFHt97KRxSLA&s", description: "Incarnation du luxe et du raffinement britannique, la Rolls-Royce Silver Cloud est le choix par excellence pour une entrée majestueuse et inoubliable lors de votre mariage.", category: "Luxe" },
+                { id: 'car7', name: "Porsche 356", location: "Nabeul (Tunisie)", pricePerDay: 450, seats: 2, bodyType: "Coupé", year: 1963, imageUrl: "https://img.leboncoin.fr/api/v1/lbcpb1/images/ce/dc/49/cedc492d1972d2ac5bd8be69e7233048dea7357a.jpg?rule=ad-large", description: "La Porsche 356 est une légende de l'automobile sportive, alliant design intemporel et performances agiles. Parfaite pour les amateurs de vitesse et d'élégance vintage.", category: "Sportive" },
+                { id: 'car8', name: "Fiat 500", location: "Monastir (Tunisie)", pricePerDay: 150, seats: 2, bodyType: "Citadine", year: 1970, imageUrl: "https://cdn0.hitched.co.uk/vendor/9606/3_2/960/jpg/306638616-488237926646934-2734686621518923730-n_4_109606-166729714339269.jpeg", description: "Petite mais pleine de caractère, la Fiat 500 est idéale pour ajouter une touche de charme italien et de légèreté à votre événement spécial, garantissant des photos adorables.", category: "Collection" },
+                { id: 'car9', name: "Cadillac Eldorado", location: "Sfax (Tunisie)", pricePerDay: 550, seats: 4, bodyType: "Décapotable", year: 1959, imageUrl: "https://www.lrm-collection.fr/Photo_big_Cadillac_Eldorado_1974_1854_1.jpg", description: "Avec ses lignes audacieuses et son allure imposante, la Cadillac Eldorado des années 50 est le symbole du rêve américain, offrant un grand luxe et une présence indéniable.", category: "Luxe" },
+                { id: 'car10', name: "Jaguar E-Type", location: "Sousse (Tunisie)", pricePerDay: 500, seats: 2, bodyType: "Décapotable", year: 1966, imageUrl: "https://etypeuk.com/media/7507/1e14247-1.jpg?anchor=center&mode=crop&width=960&height=540&meta=false&rnd=132882870040000000", description: "Considérée par beaucoup comme la plus belle voiture jamais conçue, la Jaguar E-Type combine élégance britannique et esprit sportif pour une expérience inoubliable.", category: "Sportive" },
+                { id: 'car11', name: "Mercedes-Benz Pagoda", location: "Tunis (Tunisie)", pricePerDay: 480, seats: 2, bodyType: "Décapotable", year: 1968, imageUrl: "https://d1zlgejnyf0gxt.cloudfront.net/production/car_pictures/larger/mercedes-benz-280-sl-pagode-paris-118e196b3d6dd6befb8af7c831951d63.webp", description: "Le style élégant de la Mercedes Pagoda, avec son toit distinctif, en fait une voiture de choix pour les cérémonies, alliant luxe discret et performances fiables.", category: "Luxe" },
+                { id: 'car12', name: "Aston Martin DB5", location: "Hammamet (Tunisie)", pricePerDay: 750, seats: 2, bodyType: "Coupé", year: 1964, imageUrl: "https://lh3.googleusercontent.com/URWJ-zrJgZb-215H-YluR991P5k0lTe1xkuJUmluMvi-tpw-u3M73_UgT8DxNPo-qzwo7umIObaC12y3yIfR6SUu=n-w768-h512-rj-l70", description: "La légendaire Aston Martin DB5, immortalisée par James Bond, est le summum du style britannique, de la puissance et de l'exclusivité, parfaite pour un événement d'exception.", category: "Sportive" },
+            ];
+        };
+
+        // Simuler des réservations
+        const loadExampleReservations = () => {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+            const dayAfterTomorrow = new Date(today);
+            dayAfterTomorrow.setDate(today.getDate() + 2);
+
+            return [
+                { carId: 'car1', startDate: tomorrow, endDate: tomorrow },
+                { carId: 'car3', startDate: dayAfterTomorrow, endDate: dayAfterTomorrow },
+                { carId: 'car5', startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5), endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7) }
+            ];
+        };
+
+        // Chargement des données
+        const loadDataAndRenderHome = () => {
+            cars = loadExampleCars();
+            reservations = loadExampleReservations();
+            renderHomePage(currentCategoryFilter);
+        };
+
+        // Rendu de la page d'accueil
+        const renderHomePage = (filterCategory = 'Toutes') => {
+            currentCategoryFilter = filterCategory;
+            let filteredCars = cars;
+            if (filterCategory !== 'Toutes') {
+                filteredCars = cars.filter(car => car.category === filterCategory || car.bodyType === filterCategory);
+            }
+
+            appContainer.innerHTML = `
+                <section class="hero-section" style="background-image: url('https://img.freepik.com/photos-premium/voiture-ancienne-garee-pres-rainy-street-ai_894067-8462.jpg');">
+                    <div class="hero-content">
+                        <h2 class="text-5xl md:text-7xl font-bold mb-4 drop-shadow-lg">Le Luxe Intemporel</h2>
+                        <p class="text-xl md:text-2xl font-light drop-shadow-md">Des voitures de collection pour des moments d'exception.</p>
+                    </div>
+                </section>
+
+                <section class="py-16 bg-gray-50">
+                    <div class="max-w-7xl mx-auto px-4">
+                        <div class="bg-white p-6 rounded-lg shadow-md mb-12 animate-slideInUp" style="animation-delay: 0.2s;">
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                                <input type="text" placeholder="Ville ou adresse" class="p-3 border-gray-200 border rounded-lg focus:ring-2 focus:ring-[var(--color-secondary)] focus:border-[var(--color-secondary)] col-span-1 md:col-span-1 transition">
+                                <div class="relative col-span-1 md:col-span-1">
+                                    <input type="text" placeholder="Date de début" class="p-3 border-gray-200 border rounded-lg w-full focus:ring-2 focus:ring-[var(--color-secondary)] focus:border-[var(--color-secondary)] cursor-pointer transition" onclick="showDateSelectionModal()">
+                                    <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                                <div class="relative col-span-1 md:col-span-1">
+                                    <input type="text" placeholder="Date de fin" class="p-3 border-gray-200 border rounded-lg w-full focus:ring-2 focus:ring-[var(--color-secondary)] focus:border-[var(--color-secondary)] cursor-pointer transition" onclick="showDateSelectionModal()">
+                                    <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                                <select id="car-category-filter" class="p-3 border-gray-200 border rounded-lg focus:ring-2 focus:ring-[var(--color-secondary)] focus:border-[var(--color-secondary)] col-span-1 md:col-span-1 transition">
+                                    <option value="Toutes">Toutes catégories</option>
+                                    <option value="Collection">Collection</option>
+                                    <option value="Décapotable">Décapotable</option>
+                                    <option value="Berline">Berline</option>
+                                    <option value="Sportive">Sportive</option>
+                                    <option value="Luxe">Luxe</option>
+                                </select>
+                                <button class="btn-golden text-white p-3 rounded-lg font-semibold col-span-1 md:col-span-1">
+                                    <i class="fas fa-search mr-2"></i>Rechercher
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-center mb-16 px-4">
+                            <i class="fas fa-ring text-5xl text-[var(--color-secondary)] mb-4"></i>
+                            <h3 class="text-4xl font-bold text-gray-800 mb-4">Un Mariage Inoubliable au Volant d'une Légende</h3>
+                            <p class="max-w-3xl mx-auto text-gray-600 leading-relaxed">
+                                Le jour de votre mariage est unique. Rendez-le exceptionnel avec une de nos voitures de collection. Imaginez votre arrivée dans une Rolls-Royce majestueuse, une escapade romantique en Jaguar E-Type ou des photos pleines de charme avec une Citroën 2CV. Chaque véhicule est une promesse d'élégance, de prestige et de souvenirs impérissables.
+                            </p>
+                        </div>
+
+                        <h2 class="text-4xl font-bold text-gray-800 mb-10 text-center">Notre Flotte de Prestige</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                            ${filteredCars.map((car, index) => `
+                                <div class="car-card" style="animation-delay: ${index * 100}ms" onclick="showCarDetail('${car.id}')">
+                                    <div class="relative">
+                                        <img src="${car.imageUrl}" alt="${car.name}" class="w-full h-64 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e0e0/000000?text=Image+Indisponible';">
+                                        <div class="absolute top-4 right-4 bg-[var(--color-secondary)] text-white text-xs font-bold px-3 py-1 rounded-full">${car.category}</div>
+                                    </div>
+                                    <div class="p-6">
+                                        <h3 class="text-2xl font-bold text-gray-900 mb-2">${car.name}</h3>
+                                        <p class="text-gray-500 mb-4"><i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>${car.location}</p>
+                                        <div class="flex justify-between items-center border-t pt-4">
+                                             <p class="text-xl font-bold text-[var(--color-text)]">${formatPriceInTND(car.pricePerDay)}<span class="text-sm font-normal text-gray-500"> / jour</span></p>
+                                             <div class="flex items-center text-sm text-gray-500">
+                                                 <span class="mr-4"><i class="fas fa-users mr-1"></i> ${car.seats}</span>
+                                                 <span><i class="fas fa-car mr-1"></i> ${car.bodyType}</span>
+                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+                <section class="py-20 bg-white">
+                    <div class="max-w-7xl mx-auto px-4">
+                        <div class="grid md:grid-cols-2 gap-12 items-center">
+                            <div>
+                                <img src="https://cdn0.mariages.net/vendor/2426/3_2/640/jpeg/img-3645_3_312426-172839526336912.jpeg" alt="Couple heureux dans une voiture de collection" class="rounded-lg shadow-xl w-full h-auto object-cover">
+                            </div>
+                            <div>
+                                <h3 class="text-4xl font-bold text-gray-800 mb-6">Voitures de Rêve : Plus qu'une Location, une Expérience</h3>
+                                <p class="text-gray-600 leading-relaxed mb-4">
+                                    Chez Voitures de Rêve, nous sommes des passionnés d'automobile et des créateurs de moments magiques. Notre agence, basée au cœur de la Tunisie, est née du désir de partager la beauté et l'histoire de véhicules qui ont marqué leur époque. Nous croyons que chaque grand événement mérite une voiture à sa hauteur.
+                                </p>
+                                <p class="text-gray-600 leading-relaxed">
+                                    Notre point fort réside dans notre service sur-mesure et notre attention aux détails. Chaque voiture de notre flotte est méticuleusement entretenue pour garantir non seulement son esthétique irréprochable mais aussi une fiabilité et un confort optimaux. De la première prise de contact à votre arrivée triomphale, notre équipe dévouée vous accompagne pour que votre expérience soit aussi luxueuse et fluide que la conduite de nos automobiles de légende. Faites-nous confiance pour ajouter une touche de prestige intemporel à votre histoire.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            `;
+            const categoryFilterElement = document.getElementById('car-category-filter');
+            if (categoryFilterElement) {
+                categoryFilterElement.value = currentCategoryFilter;
+                categoryFilterElement.addEventListener('change', (event) => {
+                    renderHomePage(event.target.value);
+                });
+            }
+        };
+
+        // Rendu de la page de détail d'une voiture
+        const renderCarDetailPage = (car) => {
+            currentCar = car;
+            appContainer.innerHTML = `
+                <section class="bg-white py-16 animate-fadeIn">
+                    <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <img src="${car.imageUrl}" alt="${car.name}" class="w-full h-auto object-cover rounded-lg shadow-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e0e0e0/000000?text=Image+Indisponible';">
+                        </div>
+                        <div>
+                            <h2 class="text-5xl font-bold text-gray-900 mb-3">${car.name}</h2>
+                            <p class="text-gray-500 mb-6 text-lg">${car.year}</p>
+                            <p class="text-gray-600 leading-relaxed mb-8">${car.description}</p>
+
+                            <div class="bg-gray-50 p-6 rounded-lg mb-8">
+                                <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+                                    <div class="flex items-center text-gray-700"><i class="fas fa-map-marker-alt fa-fw mr-3 text-[var(--color-secondary)]"></i><strong>Localisation:</strong><span class="ml-2">${car.location}</span></div>
+                                    <div class="flex items-center text-gray-700"><i class="fas fa-users fa-fw mr-3 text-[var(--color-secondary)]"></i><strong>Places:</strong><span class="ml-2">${car.seats}</span></div>
+                                    <div class="flex items-center text-gray-700"><i class="fas fa-car-side fa-fw mr-3 text-[var(--color-secondary)]"></i><strong>Carrosserie:</strong><span class="ml-2">${car.bodyType}</span></div>
+                                    <div class="flex items-center text-gray-700"><i class="fas fa-tag fa-fw mr-3 text-[var(--color-secondary)]"></i><strong>Catégorie:</strong><span class="ml-2">${car.category}</span></div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <p class="text-3xl font-bold text-[var(--color-text)]">${formatPriceInTND(car.pricePerDay)}<span class="text-base font-normal text-gray-500"> / jour</span></p>
+                                <button class="btn-golden font-bold px-8 py-4 rounded-full shadow-lg flex items-center" onclick="showDateSelectionModal()">
+                                    <i class="fas fa-calendar-check mr-3"></i>Réserver ce véhicule
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            `;
+        };
+
+        // Rendu de la page "À propos"
+        const renderAboutPage = () => {
+            appContainer.innerHTML = `
+                <section class="bg-white py-20 animate-fadeIn">
+                    <div class="max-w-4xl mx-auto px-4 text-center">
+                        <h2 class="text-5xl font-bold text-gray-900 mb-6">Notre Passion, Votre Rêve</h2>
+                        <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                            Bienvenue chez Voitures de Rêve, où le luxe d'antan rencontre l'exclusivité d'aujourd'hui. Nous sommes des curateurs d'expériences inoubliables, offrant une collection méticuleusement sélectionnée de véhicules d'exception pour les moments les plus précieux de la vie.
+                        </p>
+                        <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                            Chaque voiture de notre flotte est plus qu'un simple moyen de transport; c'est une pièce d'histoire, une œuvre d'art sur roues qui promet d'apporter une touche d'élégance et de prestige incomparables à votre mariage, cérémonie ou événement spécial.
+                        </p>
+                        <p class="text-lg text-gray-600 leading-relaxed">
+                            Notre mission est de fournir un service impeccable et personnalisé, assurant que votre expérience soit aussi parfaite que nos véhicules. Laissez-nous vous aider à faire une entrée qui restera gravée dans les mémoires.
+                        </p>
+                    </div>
+                </section>
+            `;
+        };
+
+        // Fonctions de gestion des modals
+        const showMessageModal = (title, text, showCalendar = false) => {
+            modalMessageTitle.textContent = title;
+            modalMessageText.textContent = text;
+            modalCalendarContainer.classList.toggle('hidden', !showCalendar);
+            document.body.style.overflow = 'hidden';
+            messageModalOverlay.classList.remove('hidden');
+        };
+
+        const closeMessageModal = () => {
+            document.body.style.overflow = '';
+            messageModalOverlay.classList.add('hidden');
+        };
+
+        const showDateSelectionModal = () => {
+            if (!currentCar) {
+                showMessageModal('Sélection requise', 'Veuillez d\'abord choisir une voiture sur la page d\'accueil.');
+                return;
+            }
+            showMessageModal(`Réserver la ${currentCar.name}`, 'Choisissez vos dates de location.', true);
+            const today = new Date();
+            currentMonth = today.getMonth();
+            currentYear = today.getFullYear();
+            renderCalendar(currentMonth, currentYear, currentCar.id);
+        };
+
+        const renderCalendar = (month, year, carId) => {
+            currentMonthYearSpan.textContent = new Date(year, month).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+            calendarDaysGrid.innerHTML = '';
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                calendarDaysGrid.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day', 'current-month');
+                dayElement.textContent = day;
+
+                if (date.getTime() < today.getTime()) {
+                     dayElement.classList.add('reserved');
+                } else {
+                    const isReserved = reservations.some(res =>
+                        res.carId === carId && date >= res.startDate && date <= res.endDate
+                    );
+
+                    if (isReserved) {
+                        dayElement.classList.add('reserved');
+                    } else {
+                        dayElement.onclick = () => selectDate(date, dayElement);
+                        if (selectedDates.some(d => d.toDateString() === date.toDateString())) {
+                            dayElement.classList.add('selected');
+                        }
+                    }
+                }
+
+                if (date.toDateString() === today.toDateString()) {
+                    dayElement.classList.add('today');
+                }
+
+                calendarDaysGrid.appendChild(dayElement);
+            }
+        };
+
+        const selectDate = (date, element) => {
+            const dateString = date.toDateString();
+            const index = selectedDates.findIndex(d => d.toDateString() === dateString);
+
+            if (index > -1) {
+                selectedDates.splice(index, 1);
+                element.classList.remove('selected');
+            } else {
+                selectedDates.push(date);
+                element.classList.add('selected');
+            }
+
+            reserveCarBtn.classList.toggle('hidden', selectedDates.length === 0);
+            selectedDates.sort((a, b) => a.getTime() - b.getTime());
+        };
+
+        prevMonthBtn.onclick = () => {
+            currentMonth = (currentMonth === 0) ? 11 : currentMonth - 1;
+            currentYear = (currentMonth === 11) ? currentYear - 1 : currentYear;
+            renderCalendar(currentMonth, currentYear, currentCar.id);
+        };
+
+        nextMonthBtn.onclick = () => {
+            currentMonth = (currentMonth === 11) ? 0 : currentMonth + 1;
+            currentYear = (currentMonth === 0) ? currentYear + 1 : currentYear;
+            renderCalendar(currentMonth, currentYear, currentCar.id);
+        };
+
+        reserveCarBtn.onclick = () => {
+            if (selectedDates.length === 0) {
+                showMessageModal('Erreur', 'Veuillez sélectionner au moins une date.');
+                return;
+            }
+
+            const newReservation = {
+                 carId: currentCar.id,
+                 startDate: selectedDates[0],
+                 endDate: selectedDates[selectedDates.length - 1],
+            };
+            reservations.push(newReservation);
+
+            closeMessageModal();
+            showMessageModal('Confirmation', `Votre réservation pour la ${currentCar.name} a bien été prise en compte.`);
+
+            selectedDates = [];
+        };
+
+        window.showCarDetail = (carId) => {
+            const car = cars.find(c => c.id === carId);
+            if (car) {
+                renderCarDetailPage(car);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        window.showDateSelectionModal = showDateSelectionModal;
+        window.closeMessageModal = closeMessageModal;
+
+        window.onload = loadDataAndRenderHome;
+
+        homeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentCar = null;
+            loadDataAndRenderHome();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        aboutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            renderAboutPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+    </script>
+</body>
+</html>
